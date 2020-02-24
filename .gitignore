@@ -1,0 +1,45 @@
+# output dir
+output
+instant_test_output
+inference_test_output
+
+
+*.jpg
+*.png
+*.txt
+
+# compilation and distribution
+__pycache__
+_ext
+*.pyc
+*.so
+*.egg-info/
+build/
+dist/
+
+tools/cvpack2_test
+tools/cvpack2_train
+
+# pytorch/python/numpy formats
+*.pth
+*.pkl
+*.npy
+
+# ipython/jupyter notebooks
+*.ipynb
+**/.ipynb_checkpoints/
+
+# Editor temporaries
+*.swn
+*.swo
+*.swp
+*~
+
+# Pycharm editor settings
+.idea
+
+# project dir and file
+/datasets
+**/log
+tools/dl_test
+tools/dl_train
