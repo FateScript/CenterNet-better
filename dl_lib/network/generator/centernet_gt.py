@@ -36,7 +36,7 @@ class CenterNetGT(object):
 
             centers = boxes.get_centers()
             centers_int = centers.to(torch.int32)
-            gt_index[:num_boxes] = centers_int[..., 1] * output_size[0] + centers_int[..., 0]
+            gt_index[:num_boxes] = centers_int[..., 1] * output_size[1] + centers_int[..., 0]
             gt_reg[:num_boxes] = centers - centers_int
             reg_mask[:num_boxes] = 1
 
