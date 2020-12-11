@@ -10,7 +10,7 @@ This repo is implemented based on my dl_lib, some parts of  code in my dl_lib  i
 
 This repo use less training time to get a better performance, it nearly spend half training time and get 1~2 pts higher mAP compared with the old repo. Here is the table of performance.
 
-| Backbone     |  mAP    |  FPS / FPS V100  |  trained model    |  
+| Backbone     |  mAP    |  FPS / V100  |  trained model    |  
 |--------------|---------|---------|-------------------|  
 |ResNet-18     | 29.8    | 92 / 113  |  [google drive](https://drive.google.com/open?id=1D3tO95sdlsh9egOjOg0N-2HHmMfqbt5X)   |  
 |ResNet-50     | 34.9    | 57 / 71   |  [google drive](https://drive.google.com/open?id=1t5Bw520_fJrn3aeSVxDBYNIgwpNdLR5s)   |  
