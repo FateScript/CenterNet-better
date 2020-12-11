@@ -10,11 +10,11 @@ This repo is implemented based on my dl_lib, some parts of  code in my dl_lib  i
 
 This repo use less training time to get a better performance, it nearly spend half training time and get 1~2 pts higher mAP compared with the old repo. Here is the table of performance.
 
-| Backbone     |  mAP    |  FPS    |  trained model    |  
+| Backbone     |  mAP    |  FPS / FPS V100  |  trained model    |  
 |--------------|---------|---------|-------------------|  
-|ResNet-18     | 29.8    | 92      |  [google drive](https://drive.google.com/open?id=1D3tO95sdlsh9egOjOg0N-2HHmMfqbt5X)   |  
-|ResNet-50     | 34.9    | 57      |  [google drive](https://drive.google.com/open?id=1t5Bw520_fJrn3aeSVxDBYNIgwpNdLR5s)   |  
-|ResNet-101    | 36.8    | 43      |  [google drive](https://drive.google.com/open?id=1762Y93i9QreUTHq-87Ir73R2nNcrHuk0)   |  
+|ResNet-18     | 29.8    | 92 / 113  |  [google drive](https://drive.google.com/open?id=1D3tO95sdlsh9egOjOg0N-2HHmMfqbt5X)   |  
+|ResNet-50     | 34.9    | 57 / 71   |  [google drive](https://drive.google.com/open?id=1t5Bw520_fJrn3aeSVxDBYNIgwpNdLR5s)   |  
+|ResNet-101    | 36.8    | 43 / 50   |  [google drive](https://drive.google.com/open?id=1762Y93i9QreUTHq-87Ir73R2nNcrHuk0)   |  
 
 ## What\'s New?
 * **treat config as a object.** You could run your config file and check the config value, which is really helpful for debug.
