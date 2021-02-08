@@ -19,6 +19,7 @@ You may want to write your own script with your datasets and other customization
 import os
 import sys
 sys.path.insert(0, '.')  # noqa: E402
+import platform
 
 from colorama import Fore, Style
 
@@ -79,13 +80,14 @@ def main(args):
     cfg, logger = default_setup(config, args)
     model = build_model(cfg)
     logger.info(f"Model structure: {model}")
-    file_sys = os.statvfs(cfg.OUTPUT_DIR)
-    free_space_Gb = (file_sys.f_bfree * file_sys.f_frsize) / 2**30
-    # We assume that a single dumped model is 700Mb
-    eval_space_Gb = (cfg.SOLVER.LR_SCHEDULER.MAX_ITER // cfg.SOLVER.CHECKPOINT_PERIOD) * 700 / 2**10
-    if eval_space_Gb > free_space_Gb:
-        logger.warning(f"{Fore.RED}Remaining space({free_space_Gb}GB) "
-                       f"is less than ({eval_space_Gb}GB){Style.RESET_ALL}")
+    if "Linux" == platform.system():
+        file_sys = os.statvfs(cfg.OUTPUT_DIR)
+        free_space_Gb = (file_sys.f_bfree * file_sys.f_frsize) / 2**30
+        # We assume that a single dumped model is 700Mb
+        eval_space_Gb = (cfg.SOLVER.LR_SCHEDULER.MAX_ITER // cfg.SOLVER.CHECKPOINT_PERIOD) * 700 / 2**10
+        if eval_space_Gb > free_space_Gb:
+            logger.warning(f"{Fore.RED}Remaining space({free_space_Gb}GB) "
+                           f"is less than ({eval_space_Gb}GB){Style.RESET_ALL}")
     if args.eval_only:
         DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
             cfg.MODEL.WEIGHTS, resume=args.resume

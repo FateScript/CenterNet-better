@@ -52,7 +52,7 @@ _config_dict = dict(
     SOLVER=dict(
         OPTIMIZER=dict(
             NAME="SGD",
-            BASE_LR=0.002,
+            BASE_LR=0.02,
             WEIGHT_DECAY=1e-4,
         ),
         LR_SCHEDULER=dict(
@@ -61,7 +61,7 @@ _config_dict = dict(
             MAX_ITER=126000,
             WARMUP_ITERS=1000,
         ),
-        IMS_PER_BATCH=16,
+        IMS_PER_BATCH=128,
     ),
     OUTPUT_DIR=osp.join(
         '/data/Outputs/model_logs/playground',

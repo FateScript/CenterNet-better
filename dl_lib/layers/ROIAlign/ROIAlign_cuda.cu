@@ -338,7 +338,7 @@ at::Tensor ROIAlign_forward_cuda(
   auto output_size = num_rois * pooled_height * pooled_width * channels;
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
-  dim3 grid(std::min(ceil_div((int)output_size, 512), 4096));
+  dim3 grid(std::min(at::cuda::ATenCeilDiv(static_cast<int64_t>(output_size), static_cast<int64_t>(512)), static_cast<int64_t>(4096)));
   dim3 block(512);
 
   if (output.numel() == 0) {
@@ -394,7 +394,7 @@ at::Tensor ROIAlign_backward_cuda(
 
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
-  dim3 grid(std::min(ceil_div((int)grad.numel(), 512), 4096));
+  dim3 grid(std::min(at::cuda::ATenCeilDiv(static_cast<int64_t>(grad.numel()), static_cast<int64_t>(512)), static_cast<int64_t>(4096)));
   dim3 block(512);
 
   // handle possibly empty gradients
