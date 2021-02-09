@@ -19,7 +19,6 @@ You may want to write your own script with your datasets and other customization
 import os
 import sys
 sys.path.insert(0, '.')  # noqa: E402
-import platform
 
 from colorama import Fore, Style
 
@@ -80,7 +79,7 @@ def main(args):
     cfg, logger = default_setup(config, args)
     model = build_model(cfg)
     logger.info(f"Model structure: {model}")
-    if "Linux" == platform.system():
+    if sys.platform == "linux":
         file_sys = os.statvfs(cfg.OUTPUT_DIR)
         free_space_Gb = (file_sys.f_bfree * file_sys.f_frsize) / 2**30
         # We assume that a single dumped model is 700Mb

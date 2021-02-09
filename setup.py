@@ -4,7 +4,7 @@
 
 import glob
 import os
-import platform
+import sys
 
 import torch
 from setuptools import find_packages, setup
@@ -13,7 +13,7 @@ from torch.utils.cpp_extension import CUDA_HOME, CppExtension, CUDAExtension
 torch_ver = [int(x) for x in torch.__version__.split(".")[:2]]
 assert torch_ver >= [1, 3], "Requires PyTorch >= 1.3"
 
-os_name = platform.system()
+os_name = sys.platform
 
 def get_extensions():
     this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -41,7 +41,7 @@ def get_extensions():
             "-D__CUDA_NO_HALF_CONVERSIONS__",
             "-D__CUDA_NO_HALF2_OPERATORS__",
         ]
-        if "Windows" == os_name:
+        if sys.platform == 'win32':
             extra_compile_args["nvcc"].append("-D _WIN64")
 
         # It's better if pytorch can do this by default ..
@@ -66,13 +66,13 @@ def get_extensions():
 
 cur_dir = os.getcwd()
 
-if "Windows" == os_name:
+if os_name == "win32":
     dl_train_name = "tools/dl_train.bat"
     dl_test_name = "tools/dl_test.bat"
     head = f"set OMP_NUM_THREADS=1\n"
     python_command = "python"
     parameters = "%*"
-elif "Linux" == os_name:
+elif os_name == "linux":
     dl_train_name = "tools/dl_train"
     dl_test_name = "tools/dl_test"
     head = f"#!/bin/bash\n\nexport OMP_NUM_THREADS=1\n"
@@ -114,6 +114,6 @@ setup(
     extras_require={"all": ["shapely", "psutil"]},
     ext_modules=get_extensions(),
     cmdclass={"build_ext": torch.utils.cpp_extension.BuildExtension},
-    scripts=["tools/dl_train", "tools/dl_test"] if 'Linux' == os_name
+    scripts=["tools/dl_train", "tools/dl_test"] if os_name == 'linux'
     else ["tools/dl_train.bat", "tools/dl_test.bat"],
 )
