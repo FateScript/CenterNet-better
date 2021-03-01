@@ -88,7 +88,8 @@ class COCOEvaluator(DatasetEvaluator):
 
         tasks = ("bbox",)
         if cfg.MODEL.MASK_ON:
-            tasks = tasks + ("segm",)
+            #tasks = tasks + ("segm",)
+            pass
         if cfg.MODEL.KEYPOINT_ON:
             tasks = tasks + ("keypoints",)
         return tasks

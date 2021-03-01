@@ -36,15 +36,21 @@ class CenternetHead(nn.Module):
         )
         self.wh_head = SingleHead(64, 2)
         self.reg_head = SingleHead(64, 2)
+        self.segmentation_head_x = SingleHead(64, cfg.MODEL.CENTERNET.NUM_POLYGON_POINTS)
+        self.segmentation_head_y = SingleHead(64, cfg.MODEL.CENTERNET.NUM_POLYGON_POINTS)
 
     def forward(self, x):
         cls = self.cls_head(x)
         cls = torch.sigmoid(cls)
         wh = self.wh_head(x)
         reg = self.reg_head(x)
+        segmentation_x = self.segmentation_head_x(x)
+        segmentation_y = self.segmentation_head_y(x)
         pred = {
             'cls': cls,
             'wh': wh,
-            'reg': reg
+            'reg': reg,
+            'segmentation_x': segmentation_x,
+            'segmentation_y': segmentation_y
         }
         return pred

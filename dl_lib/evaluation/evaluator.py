@@ -101,7 +101,8 @@ def inference_on_dataset(model, data_loader, evaluator):
     Returns:
         The return value of `evaluator.evaluate()`
     """
-    num_devices = torch.distributed.get_world_size() if torch.distributed.is_initialized() else 1
+    #num_devices = torch.distributed.get_world_size() if torch.distributed.is_initialized() else 1
+    num_devices = 1
     logger = logging.getLogger(__name__)
     logger.info("Start inference on {} images".format(len(data_loader)))
 
@@ -120,6 +121,7 @@ def inference_on_dataset(model, data_loader, evaluator):
 
             start_compute_time = time.time()
             outputs = model(inputs)
+            draw_result(inputs, outputs)
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
             total_compute_time += time.time() - start_compute_time
@@ -159,6 +161,19 @@ def inference_on_dataset(model, data_loader, evaluator):
     if results is None:
         results = {}
     return results
+
+def draw_result(inputs, outputs):
+    import cv2
+    for input, output in zip(inputs, outputs):
+        file_name = input['file_name']
+        image = cv2.imread(file_name)
+        pred_segmentation = output['instances'].get('pred_segmentation')
+        pred_bbox = output['instances'].get('pred_boxes').tensor
+        for segmentation, bbox in zip(pred_segmentation, pred_bbox):
+            for idx in range(0, segmentation.shape[0], 2):
+                cv2.circle(image, (int(segmentation[idx]), int(segmentation[idx+1])), 2, (0, 255, 0), 0)
+            cv2.rectangle(image, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 255, 0), 2)
+            cv2.imwrite(r'D:\project\COCO_MetalMulti\result\result.jpg', image)
 
 
 @contextmanager

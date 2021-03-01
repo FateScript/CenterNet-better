@@ -111,15 +111,21 @@ class CenterNet(nn.Module):
 
         # regression loss
         loss_reg = reg_l1_loss(pred_dict['reg'], mask, index, gt_dict['reg'])
+        loss_segmentation_x = reg_l1_loss(pred_dict['segmentation_x'], mask, index, gt_dict['segmentation_x'])
+        loss_segmentation_y = reg_l1_loss(pred_dict['segmentation_y'], mask, index, gt_dict['segmentation_y'])
 
         loss_cls *= self.cfg.MODEL.LOSS.CLS_WEIGHT
         loss_wh *= self.cfg.MODEL.LOSS.WH_WEIGHT
         loss_reg *= self.cfg.MODEL.LOSS.REG_WEIGHT
+        loss_segmentation_x *= self.cfg.MODEL.LOSS.SEG_WEIGHT
+        loss_segmentation_y *= self.cfg.MODEL.LOSS.SEG_WEIGHT
 
         loss = {
             "loss_cls": loss_cls,
             "loss_box_wh": loss_wh,
             "loss_center_reg": loss_reg,
+            "loss_segmentation_x": loss_segmentation_x,
+            "loss_segmentation_y": loss_segmentation_y,
         }
         # print(loss)
         return loss
@@ -168,8 +174,12 @@ class CenterNet(nn.Module):
         fmap = pred_dict["cls"]
         reg = pred_dict["reg"]
         wh = pred_dict["wh"]
+        segmentation_x = pred_dict["segmentation_x"] if 'segmentation_x' in pred_dict else None
+        segmentation_y = pred_dict["segmentation_y"] if 'segmentation_y' in pred_dict else None
+        segmentation = (segmentation_x, segmentation_y) if segmentation_x is not None and segmentation_y is not None \
+            else None
 
-        boxes, scores, classes = CenterNetDecoder.decode(fmap, wh, reg)
+        boxes, scores, classes, segmentation = CenterNetDecoder.decode(fmap, wh, reg, segmentation=segmentation)
         # boxes = Boxes(boxes.reshape(boxes.shape[-2:]))
         scores = scores.reshape(-1)
         classes = classes.reshape(-1).to(torch.int64)
@@ -177,7 +187,8 @@ class CenterNet(nn.Module):
         # dets = CenterNetDecoder.decode(fmap, wh, reg)
         boxes = CenterNetDecoder.transform_boxes(boxes, img_info)
         boxes = Boxes(boxes)
-        return dict(pred_boxes=boxes, scores=scores, pred_classes=classes)
+        segmentation = CenterNetDecoder.transform_segmentation(segmentation, img_info)
+        return dict(pred_boxes=boxes, scores=scores, pred_classes=classes, pred_segmentation=segmentation)
 
     def preprocess_image(self, batched_inputs):
         """

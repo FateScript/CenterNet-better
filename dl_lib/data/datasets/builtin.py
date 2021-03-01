@@ -28,29 +28,36 @@ from .register_coco import register_coco_instances
 # ==== Predefined datasets and splits for COCO ==========
 
 _PREDEFINED_SPLITS_COCO = {}
-_PREDEFINED_SPLITS_COCO["coco"] = {
-    "coco_2014_train":
-    ("coco/train2014", "coco/annotations/instances_train2014.json"),
-    "coco_2014_val":
-    ("coco/val2014", "coco/annotations/instances_val2014.json"),
-    "coco_2014_minival":
-    ("coco/val2014", "coco/annotations/instances_minival2014.json"),
-    "coco_2014_minival_100":
-    ("coco/val2014", "coco/annotations/instances_minival2014_100.json"),
-    "coco_2014_valminusminival": (
-        "coco/val2014",
-        "coco/annotations/instances_valminusminival2014.json",
-    ),
-    "coco_2017_train": ("coco/train2017",
-                        "coco/annotations/instances_train2017.json"),
-    "coco_2017_val": ("coco/val2017",
-                      "coco/annotations/instances_val2017.json"),
-    "coco_2017_test": ("coco/test2017",
-                       "coco/annotations/image_info_test2017.json"),
-    "coco_2017_test-dev": ("coco/test2017",
-                           "coco/annotations/image_info_test-dev2017.json"),
-    "coco_2017_val_100": ("coco/val2017",
-                          "coco/annotations/instances_val2017_100.json"),
+# _PREDEFINED_SPLITS_COCO["coco"] = {
+#     "coco_2014_train":
+#     ("coco/train2014", "coco/annotations/instances_train2014.json"),
+#     "coco_2014_val":
+#     ("coco/val2014", "coco/annotations/instances_val2014.json"),
+#     "coco_2014_minival":
+#     ("coco/val2014", "coco/annotations/instances_minival2014.json"),
+#     "coco_2014_minival_100":
+#     ("coco/val2014", "coco/annotations/instances_minival2014_100.json"),
+#     "coco_2014_valminusminival": (
+#         "coco/val2014",
+#         "coco/annotations/instances_valminusminival2014.json",
+#     ),
+#     "coco_2017_train": ("coco/train2017",
+#                         "coco/annotations/instances_train2017.json"),
+#     "coco_2017_val": ("coco/val2017",
+#                       "coco/annotations/instances_val2017.json"),
+#     "coco_2017_test": ("coco/test2017",
+#                        "coco/annotations/image_info_test2017.json"),
+#     "coco_2017_test-dev": ("coco/test2017",
+#                            "coco/annotations/image_info_test-dev2017.json"),
+#     "coco_2017_val_100": ("coco/val2017",
+#                           "coco/annotations/instances_val2017_100.json"),
+# }
+
+_PREDEFINED_SPLITS_COCO["multi_metal"] = {
+    "multi_metal_coco_2014_train":
+    ("train2014", "annotations/instances_train2014.json"),
+    "multi_metal_coco_2014_val":
+    ("val2014", "annotations/instances_val2014.json"),
 }
 
 
@@ -87,5 +94,5 @@ def register_all_pascal_voc(root=osp.join(
 
 
 # Register them all under "./datasets"
-register_all_coco()
+register_all_coco(root=r'D:\project\COCO_MetalMulti')
 register_all_pascal_voc()

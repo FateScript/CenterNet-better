@@ -4,23 +4,26 @@ from dl_lib.configs.base_detection_config import BaseDetectionConfig
 _config_dict = dict(
     MODEL=dict(
         WEIGHTS="",
+        MASK_ON=True,
         RESNETS=dict(DEPTH=18),
         PIXEL_MEAN=[0.485, 0.456, 0.406],
         PIXEL_STD=[0.229, 0.224, 0.225],
         CENTERNET=dict(
             DECONV_CHANNEL=[512, 256, 128, 64],
             DECONV_KERNEL=[4, 4, 4],
-            NUM_CLASSES=80,
+            NUM_CLASSES=10,
             MODULATE_DEFORM=True,
             BIAS_VALUE=-2.19,
             DOWN_SCALE=4,
             MIN_OVERLAP=0.7,
             TENSOR_DIM=128,
+            NUM_POLYGON_POINTS=4,
         ),
         LOSS=dict(
             CLS_WEIGHT=1,
             WH_WEIGHT=0.1,
             REG_WEIGHT=1,
+            SEG_WEIGHT=0.1,
         ),
     ),
     INPUT=dict(
@@ -46,13 +49,13 @@ _config_dict = dict(
         NUM_WORKERS=4,
     ),
     DATASETS=dict(
-        TRAIN=("coco_2017_train",),
-        TEST=("coco_2017_val",),
+        TRAIN=("multi_metal_coco_2014_train",),
+        TEST=("multi_metal_coco_2014_val",),
     ),
     SOLVER=dict(
         OPTIMIZER=dict(
             NAME="SGD",
-            BASE_LR=0.02,
+            BASE_LR=0.002,
             WEIGHT_DECAY=1e-4,
         ),
         LR_SCHEDULER=dict(
@@ -61,7 +64,7 @@ _config_dict = dict(
             MAX_ITER=126000,
             WARMUP_ITERS=1000,
         ),
-        IMS_PER_BATCH=128,
+        IMS_PER_BATCH=16,
     ),
     OUTPUT_DIR=osp.join(
         '/data/Outputs/model_logs/playground',
