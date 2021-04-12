@@ -36,8 +36,8 @@ class CenternetHead(nn.Module):
         )
         self.wh_head = SingleHead(64, 2)
         self.reg_head = SingleHead(64, 2)
-        self.segmentation_head_x = SingleHead(64, cfg.MODEL.CENTERNET.NUM_POLYGON_POINTS)
-        self.segmentation_head_y = SingleHead(64, cfg.MODEL.CENTERNET.NUM_POLYGON_POINTS)
+        self.segmentation_head_x = SegHead(num_polygon_points=cfg.MODEL.CENTERNET.NUM_POLYGON_POINTS)
+        self.segmentation_head_y = SegHead(num_polygon_points=cfg.MODEL.CENTERNET.NUM_POLYGON_POINTS)
 
     def forward(self, x):
         cls = self.cls_head(x)
@@ -54,3 +54,32 @@ class CenternetHead(nn.Module):
             'segmentation_y': segmentation_y
         }
         return pred
+
+class SegHead(nn.Module):
+    def __init__(self, num_convs=2, in_channels=64, conv_out_channels=64, conv_kernel_size=3, num_polygon_points=4):
+        super(SegHead, self).__init__()
+        self.num_convs = num_convs
+        self.in_channels = in_channels
+        self.conv_out_channels = conv_out_channels
+        self.conv_kernel_size = conv_kernel_size
+        self.relu = nn.ReLU(inplace=True)
+        self.out_conv = nn.Conv2d(conv_out_channels, num_polygon_points, 1)
+
+        self.convs = nn.ModuleList()
+        for i in range(self.num_convs):
+            in_channels = (
+                self.in_channels if i == 0 else self.conv_out_channels)
+            padding = (self.conv_kernel_size - 1) // 2
+            self.convs.append(
+                nn.Conv2d(
+                    in_channels,
+                    self.conv_out_channels,
+                    self.conv_kernel_size,
+                    padding=padding,))
+
+    def forward(self, x):
+        for conv in self.convs:
+            x = conv(x)
+        x = self.relu(x)
+        x = self.out_conv(x)
+        return x

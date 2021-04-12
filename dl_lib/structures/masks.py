@@ -440,8 +440,8 @@ class PolygonMasks:
             down_in_x = line[line == line[max_in_y * 2].max()].min()
             down_in_y = line[1::2].max()
 
-            target_numpy_x = np.array([left_in_x, up_in_x, right_in_x, down_in_x])
-            target_numpy_y = np.array([left_in_y, up_in_y, right_in_y, down_in_y])
+            target_numpy_x = np.array([left_in_x, up_in_x, right_in_x, down_in_x]) / 512
+            target_numpy_y = np.array([left_in_y, up_in_y, right_in_y, down_in_y]) / 512
 
             polygons_x.append(target_numpy_x)
             polygons_y.append(target_numpy_y)

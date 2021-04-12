@@ -3,15 +3,15 @@ from dl_lib.configs.base_detection_config import BaseDetectionConfig
 
 _config_dict = dict(
     MODEL=dict(
-        WEIGHTS="",
+        WEIGHTS=r"D:\git_projects\CenterNet-better\playground\centernet.res18.coco.512size\exp_3\model_final.pth",
         MASK_ON=True,
-        RESNETS=dict(DEPTH=18),
+        RESNETS=dict(DEPTH=101),
         PIXEL_MEAN=[0.485, 0.456, 0.406],
         PIXEL_STD=[0.229, 0.224, 0.225],
         CENTERNET=dict(
-            DECONV_CHANNEL=[512, 256, 128, 64],
+            DECONV_CHANNEL=[2048, 256, 128, 64],
             DECONV_KERNEL=[4, 4, 4],
-            NUM_CLASSES=10,
+            NUM_CLASSES=80,
             MODULATE_DEFORM=True,
             BIAS_VALUE=-2.19,
             DOWN_SCALE=4,
@@ -23,7 +23,7 @@ _config_dict = dict(
             CLS_WEIGHT=1,
             WH_WEIGHT=0.1,
             REG_WEIGHT=1,
-            SEG_WEIGHT=0.1,
+            SEG_WEIGHT=2,
         ),
     ),
     INPUT=dict(
@@ -49,8 +49,8 @@ _config_dict = dict(
         NUM_WORKERS=4,
     ),
     DATASETS=dict(
-        TRAIN=("multi_metal_coco_2014_train",),
-        TEST=("multi_metal_coco_2014_val",),
+        TRAIN=("coco_2017_train",),
+        TEST=("coco_2017_val",),
     ),
     SOLVER=dict(
         OPTIMIZER=dict(
@@ -61,10 +61,10 @@ _config_dict = dict(
         LR_SCHEDULER=dict(
             GAMMA=0.1,
             STEPS=(81000, 108000),
-            MAX_ITER=126000,
+            MAX_ITER=253000,
             WARMUP_ITERS=1000,
         ),
-        IMS_PER_BATCH=16,
+        IMS_PER_BATCH=4,
     ),
     OUTPUT_DIR=osp.join(
         '/data/Outputs/model_logs/playground',

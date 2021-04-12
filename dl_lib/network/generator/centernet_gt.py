@@ -31,8 +31,8 @@ class CenterNetGT(object):
             gt_reg = torch.zeros_like(gt_wh)
             reg_mask = torch.zeros(tensor_dim)
             gt_index = torch.zeros(tensor_dim)
-            gt_segmentation_x = torch.ones(tensor_dim, num_polygons_points) * -1
-            gt_segmentation_y = torch.ones(tensor_dim, num_polygons_points) * -1
+            gt_segmentation_x = torch.ones(tensor_dim, num_polygons_points) * -128
+            gt_segmentation_y = torch.ones(tensor_dim, num_polygons_points) * -128
             # pass
 
             boxes, classes = bbox_dict['gt_boxes'], bbox_dict['gt_classes']
@@ -60,6 +60,15 @@ class CenterNetGT(object):
                 masks.normalized_by_length(box_tensor.numpy(),
                                            num_polygons_points,
                                            box_scale)
+            gt_segmentation = torch.zeros(num_boxes, num_polygons_points * 2)
+            gt_segmentation[:, 0::2] = gt_segmentation_x[:num_boxes]
+            gt_segmentation[:, 1::2] = gt_segmentation_y[:num_boxes]
+            import cv2
+            image = data['image'].numpy().transpose((1, 2, 0))
+            image = cv2.resize(image, (128, 128))
+            for bbox in box_tensor:
+                cv2.rectangle(image, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 255, 0), 2)
+                cv2.imwrite(r'D:\project\COCO_MetalMulti\result\result.jpg', image)
 
             scoremap_list.append(gt_scoremap)
             wh_list.append(gt_wh)

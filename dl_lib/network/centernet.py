@@ -10,6 +10,8 @@ from dl_lib.structures import Boxes, ImageList, Instances
 from .generator import CenterNetDecoder, CenterNetGT
 from .loss import modified_focal_loss, reg_l1_loss
 
+import matplotlib.pyplot as plt
+
 
 class CenterNet(nn.Module):
     """
@@ -73,9 +75,9 @@ class CenterNet(nn.Module):
 
         gt_dict = self.get_ground_truth(batched_inputs)
 
-        return self.losses(pred_dict, gt_dict)
+        return self.losses(pred_dict, gt_dict, images)
 
-    def losses(self, pred_dict, gt_dict):
+    def losses(self, pred_dict, gt_dict, images):
         r"""
         calculate losses of pred and gt
 
@@ -107,12 +109,24 @@ class CenterNet(nn.Module):
         index = gt_dict['index']
         index = index.to(torch.long)
         # width and height loss, better version
-        loss_wh = reg_l1_loss(pred_dict['wh'], mask, index, gt_dict['wh'])
+        loss_wh, _, _ = reg_l1_loss(pred_dict['wh'], mask, index, gt_dict['wh'])
 
         # regression loss
-        loss_reg = reg_l1_loss(pred_dict['reg'], mask, index, gt_dict['reg'])
-        loss_segmentation_x = reg_l1_loss(pred_dict['segmentation_x'], mask, index, gt_dict['segmentation_x'])
-        loss_segmentation_y = reg_l1_loss(pred_dict['segmentation_y'], mask, index, gt_dict['segmentation_y'])
+        loss_reg, _, _ = reg_l1_loss(pred_dict['reg'], mask, index, gt_dict['reg'])
+        loss_segmentation_x, pred_x_s, gt_x_s = reg_l1_loss(pred_dict['segmentation_x'], mask, index, gt_dict['segmentation_x'])
+        loss_segmentation_y, pred_y_s, gt_y_s = reg_l1_loss(pred_dict['segmentation_y'], mask, index, gt_dict['segmentation_y'])
+
+
+        for pred_x, gt_x, pred_y, gt_y in zip(pred_x_s[0], gt_x_s[0], pred_y_s[0], gt_y_s[0]):
+            pred_x = pred_x.cpu().data.numpy() * 512
+            gt_x = gt_x.cpu().data.numpy() * 512
+            pred_y = pred_y.cpu().data.numpy() * 512
+            gt_y = gt_y.cpu().data.numpy() * 512
+            # plt.scatter(i[:, 1], i[:, 0], color='b')
+            plt.imshow(np.transpose(images[0].cpu().data.numpy(), (1, 2, 0)))
+            plt.scatter(gt_x, gt_y, color='g')
+            plt.scatter(pred_x, pred_y, color='r')
+            plt.show()
 
         loss_cls *= self.cfg.MODEL.LOSS.CLS_WEIGHT
         loss_wh *= self.cfg.MODEL.LOSS.WH_WEIGHT

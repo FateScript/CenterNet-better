@@ -11,4 +11,4 @@ def reg_l1_loss(output, mask, index, target):
     # loss = F.l1_loss(pred * mask, target * mask, reduction='elementwise_mean')
     loss = F.l1_loss(pred * mask, target * mask, reduction='sum')
     loss = loss / (mask.sum() + 1e-4)
-    return loss
+    return loss, pred * mask, target * mask
