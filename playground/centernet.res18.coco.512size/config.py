@@ -3,12 +3,13 @@ from dl_lib.configs.base_detection_config import BaseDetectionConfig
 
 _config_dict = dict(
     MODEL=dict(
-        WEIGHTS="",
-        RESNETS=dict(DEPTH=18),
+        WEIGHTS=r"D:\git_projects\CenterNet-better\playground\centernet.res18.coco.512size\exp_3\model_final.pth",
+        MASK_ON=True,
+        RESNETS=dict(DEPTH=101),
         PIXEL_MEAN=[0.485, 0.456, 0.406],
         PIXEL_STD=[0.229, 0.224, 0.225],
         CENTERNET=dict(
-            DECONV_CHANNEL=[512, 256, 128, 64],
+            DECONV_CHANNEL=[2048, 256, 128, 64],
             DECONV_KERNEL=[4, 4, 4],
             NUM_CLASSES=80,
             MODULATE_DEFORM=True,
@@ -16,11 +17,13 @@ _config_dict = dict(
             DOWN_SCALE=4,
             MIN_OVERLAP=0.7,
             TENSOR_DIM=128,
+            NUM_POLYGON_POINTS=4,
         ),
         LOSS=dict(
             CLS_WEIGHT=1,
             WH_WEIGHT=0.1,
             REG_WEIGHT=1,
+            SEG_WEIGHT=2,
         ),
     ),
     INPUT=dict(
@@ -52,16 +55,16 @@ _config_dict = dict(
     SOLVER=dict(
         OPTIMIZER=dict(
             NAME="SGD",
-            BASE_LR=0.02,
+            BASE_LR=0.002,
             WEIGHT_DECAY=1e-4,
         ),
         LR_SCHEDULER=dict(
             GAMMA=0.1,
             STEPS=(81000, 108000),
-            MAX_ITER=126000,
+            MAX_ITER=253000,
             WARMUP_ITERS=1000,
         ),
-        IMS_PER_BATCH=128,
+        IMS_PER_BATCH=4,
     ),
     OUTPUT_DIR=osp.join(
         '/data/Outputs/model_logs/playground',

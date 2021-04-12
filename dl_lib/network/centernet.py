@@ -10,6 +10,8 @@ from dl_lib.structures import Boxes, ImageList, Instances
 from .generator import CenterNetDecoder, CenterNetGT
 from .loss import modified_focal_loss, reg_l1_loss
 
+import matplotlib.pyplot as plt
+
 
 class CenterNet(nn.Module):
     """
@@ -73,9 +75,9 @@ class CenterNet(nn.Module):
 
         gt_dict = self.get_ground_truth(batched_inputs)
 
-        return self.losses(pred_dict, gt_dict)
+        return self.losses(pred_dict, gt_dict, images)
 
-    def losses(self, pred_dict, gt_dict):
+    def losses(self, pred_dict, gt_dict, images):
         r"""
         calculate losses of pred and gt
 
@@ -107,19 +109,37 @@ class CenterNet(nn.Module):
         index = gt_dict['index']
         index = index.to(torch.long)
         # width and height loss, better version
-        loss_wh = reg_l1_loss(pred_dict['wh'], mask, index, gt_dict['wh'])
+        loss_wh, _, _ = reg_l1_loss(pred_dict['wh'], mask, index, gt_dict['wh'])
 
         # regression loss
-        loss_reg = reg_l1_loss(pred_dict['reg'], mask, index, gt_dict['reg'])
+        loss_reg, _, _ = reg_l1_loss(pred_dict['reg'], mask, index, gt_dict['reg'])
+        loss_segmentation_x, pred_x_s, gt_x_s = reg_l1_loss(pred_dict['segmentation_x'], mask, index, gt_dict['segmentation_x'])
+        loss_segmentation_y, pred_y_s, gt_y_s = reg_l1_loss(pred_dict['segmentation_y'], mask, index, gt_dict['segmentation_y'])
+
+
+        for pred_x, gt_x, pred_y, gt_y in zip(pred_x_s[0], gt_x_s[0], pred_y_s[0], gt_y_s[0]):
+            pred_x = pred_x.cpu().data.numpy() * 512
+            gt_x = gt_x.cpu().data.numpy() * 512
+            pred_y = pred_y.cpu().data.numpy() * 512
+            gt_y = gt_y.cpu().data.numpy() * 512
+            # plt.scatter(i[:, 1], i[:, 0], color='b')
+            plt.imshow(np.transpose(images[0].cpu().data.numpy(), (1, 2, 0)))
+            plt.scatter(gt_x, gt_y, color='g')
+            plt.scatter(pred_x, pred_y, color='r')
+            plt.show()
 
         loss_cls *= self.cfg.MODEL.LOSS.CLS_WEIGHT
         loss_wh *= self.cfg.MODEL.LOSS.WH_WEIGHT
         loss_reg *= self.cfg.MODEL.LOSS.REG_WEIGHT
+        loss_segmentation_x *= self.cfg.MODEL.LOSS.SEG_WEIGHT
+        loss_segmentation_y *= self.cfg.MODEL.LOSS.SEG_WEIGHT
 
         loss = {
             "loss_cls": loss_cls,
             "loss_box_wh": loss_wh,
             "loss_center_reg": loss_reg,
+            "loss_segmentation_x": loss_segmentation_x,
+            "loss_segmentation_y": loss_segmentation_y,
         }
         # print(loss)
         return loss
@@ -168,8 +188,12 @@ class CenterNet(nn.Module):
         fmap = pred_dict["cls"]
         reg = pred_dict["reg"]
         wh = pred_dict["wh"]
+        segmentation_x = pred_dict["segmentation_x"] if 'segmentation_x' in pred_dict else None
+        segmentation_y = pred_dict["segmentation_y"] if 'segmentation_y' in pred_dict else None
+        segmentation = (segmentation_x, segmentation_y) if segmentation_x is not None and segmentation_y is not None \
+            else None
 
-        boxes, scores, classes = CenterNetDecoder.decode(fmap, wh, reg)
+        boxes, scores, classes, segmentation = CenterNetDecoder.decode(fmap, wh, reg, segmentation=segmentation)
         # boxes = Boxes(boxes.reshape(boxes.shape[-2:]))
         scores = scores.reshape(-1)
         classes = classes.reshape(-1).to(torch.int64)
@@ -177,7 +201,8 @@ class CenterNet(nn.Module):
         # dets = CenterNetDecoder.decode(fmap, wh, reg)
         boxes = CenterNetDecoder.transform_boxes(boxes, img_info)
         boxes = Boxes(boxes)
-        return dict(pred_boxes=boxes, scores=scores, pred_classes=classes)
+        segmentation = CenterNetDecoder.transform_segmentation(segmentation, img_info)
+        return dict(pred_boxes=boxes, scores=scores, pred_classes=classes, pred_segmentation=segmentation)
 
     def preprocess_image(self, batched_inputs):
         """

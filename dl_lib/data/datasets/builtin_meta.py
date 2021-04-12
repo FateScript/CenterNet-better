@@ -140,6 +140,18 @@ COCO_CATEGORIES = [
     {"color": [250, 141, 255], "isthing": 0, "id": 200, "name": "rug-merged"},
 ]
 
+MULTI_METAL_COCO_CATEGORIES = [
+    {"color": [220, 20, 60], "isthing": 1, "id": 1, "name": "flat"},
+    {"color": [119, 11, 32], "isthing": 1, "id": 2, "name": "flat_back"},
+    {"color": [0, 0, 142], "isthing": 1, "id": 3, "name": "four_flat"},
+    {"color": [0, 0, 230], "isthing": 1, "id": 4, "name": "four_hole"},
+    {"color": [106, 0, 228], "isthing": 1, "id": 5, "name": "metal_three"},
+    {"color": [0, 60, 100], "isthing": 1, "id": 6, "name": "metal_three_back"},
+    {"color": [0, 80, 100], "isthing": 1, "id": 7, "name": "one_hole_back"},
+    {"color": [0, 0, 70], "isthing": 1, "id": 8, "name": "one_hole_front"},
+    {"color": [0, 0, 192], "isthing": 1, "id": 9, "name": "two_back"},
+    {"color": [250, 170, 30], "isthing": 1, "id": 10, "name": "two_front"},
+]
 
 def _get_coco_instances_meta():
     thing_ids = [k["id"] for k in COCO_CATEGORIES if k["isthing"] == 1]
@@ -148,6 +160,20 @@ def _get_coco_instances_meta():
     # Mapping from the incontiguous COCO category id to an id in [0, 79]
     thing_dataset_id_to_contiguous_id = {k: i for i, k in enumerate(thing_ids)}
     thing_classes = [k["name"] for k in COCO_CATEGORIES if k["isthing"] == 1]
+    ret = {
+        "thing_dataset_id_to_contiguous_id": thing_dataset_id_to_contiguous_id,
+        "thing_classes": thing_classes,
+        "thing_colors": thing_colors,
+    }
+    return ret
+
+def _get_multi_metal_coco_instances_meta():
+    thing_ids = [k["id"] for k in MULTI_METAL_COCO_CATEGORIES if k["isthing"] == 1]
+    thing_colors = [k["color"] for k in MULTI_METAL_COCO_CATEGORIES if k["isthing"] == 1]
+    assert len(thing_ids) == 10, len(thing_ids)
+    # Mapping from the incontiguous COCO category id to an id in [0, 79]
+    thing_dataset_id_to_contiguous_id = {k: i for i, k in enumerate(thing_ids)}
+    thing_classes = [k["name"] for k in MULTI_METAL_COCO_CATEGORIES if k["isthing"] == 1]
     ret = {
         "thing_dataset_id_to_contiguous_id": thing_dataset_id_to_contiguous_id,
         "thing_classes": thing_classes,
@@ -175,4 +201,6 @@ def _get_builtin_metadata(dataset_name):
             "thing_classes": CITYSCAPES_THING_CLASSES,
             "stuff_classes": CITYSCAPES_STUFF_CLASSES,
         }
+    elif dataset_name == "multi_metal":
+        return _get_multi_metal_coco_instances_meta()
     raise KeyError("No built-in metadata for dataset {}".format(dataset_name))

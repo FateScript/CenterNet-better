@@ -394,6 +394,61 @@ class PolygonMasks:
 
             return torch.tensor(area)
 
+    def normalized_by_length(self, bboxes, num_of_target, bbox_scale):
+        if bboxes.shape[0] == 0:
+            return torch.ones(0, num_of_target) * -128, torch.ones(0, num_of_target) * -128
+
+        polygons_x = []
+        polygons_y = []
+        for idx, polygons_per_instance in enumerate(self.polygons):
+            # sum_of_points = sum([int(line.shape[0]/2) for line in polygons_per_instance])
+            # lines_per_polygons_x = []
+            # lines_per_polygons_y = []
+            # bbox = bboxes[idx]
+            # for line in polygons_per_instance:
+            #     num_of_points = int(line.shape[0]/2)
+            #     line *= bbox_scale
+            #     line = np.roll(line, -np.argwhere(line==line[np.argwhere(line[1::2]==line[1::2].min())*2].min()).min())
+            #     normalized_line_x = (line[0::2] - np.tile(bbox[0], num_of_points))
+            #     normalized_line_y = (line[1::2] - np.tile(bbox[1], num_of_points))
+            #     lines_per_polygons_x.append(normalized_line_x)
+            #     lines_per_polygons_y.append(normalized_line_y)
+            # if sum_of_points > num_of_target:
+            #     sample_idx = np.linspace(0, sum_of_points, num=num_of_target, endpoint=False, dtype=np.int32)
+            #     sum_of_points = int(num_of_target)
+            # else:
+            #     sample_idx = np.arange(0, sum_of_points)
+            # target_numpy_x = np.ones(num_of_target) * -128
+            # target_numpy_x[:sum_of_points] = np.concatenate(lines_per_polygons_x)[sample_idx]
+            # target_numpy_y = np.ones(num_of_target) * -128
+            # target_numpy_y[:sum_of_points] = np.concatenate(lines_per_polygons_y)[sample_idx]
+            line = np.concatenate(polygons_per_instance) * bbox_scale
+
+            min_in_x = np.squeeze(np.argwhere(line[0::2] == line[0::2].min()))
+            left_in_x = line[0::2].min()
+            left_in_y = line[line == line[min_in_x * 2 + 1].max()].min()
+
+            min_in_y = np.squeeze(np.argwhere(line[1::2] == line[1::2].min()))
+            up_in_x = line[line == line[min_in_y * 2].min()].min()
+            up_in_y = line[1::2].min()
+
+            max_in_x = np.squeeze(np.argwhere(line[0::2] == line[0::2].max()))
+            right_in_x = line[0::2].max()
+            right_in_y = line[line == line[max_in_x * 2 + 1].min()].min()
+
+            max_in_y = np.squeeze(np.argwhere(line[1::2] == line[1::2].max()))
+            down_in_x = line[line == line[max_in_y * 2].max()].min()
+            down_in_y = line[1::2].max()
+
+            target_numpy_x = np.array([left_in_x, up_in_x, right_in_x, down_in_x]) / 512
+            target_numpy_y = np.array([left_in_y, up_in_y, right_in_y, down_in_y]) / 512
+
+            polygons_x.append(target_numpy_x)
+            polygons_y.append(target_numpy_y)
+
+        return torch.tensor(polygons_x), torch.tensor(polygons_y)
+
+
     @staticmethod
     def cat(polymasks_list: List["PolygonMasks"]) -> "PolygonMasks":
         """

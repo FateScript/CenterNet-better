@@ -53,6 +53,13 @@ _PREDEFINED_SPLITS_COCO["coco"] = {
                           "coco/annotations/instances_val2017_100.json"),
 }
 
+_PREDEFINED_SPLITS_COCO["multi_metal"] = {
+    "multi_metal_coco_2014_train":
+    ("train2014", "annotations/instances_train2014.json"),
+    "multi_metal_coco_2014_val":
+    ("val2014", "annotations/instances_val2014.json"),
+}
+
 
 def register_all_coco(root=osp.join(
         osp.split(osp.split(dl_lib.__file__)[0])[0], "datasets")):
@@ -87,5 +94,5 @@ def register_all_pascal_voc(root=osp.join(
 
 
 # Register them all under "./datasets"
-register_all_coco()
+register_all_coco(root=r'E:\dataset\uncompressed')
 register_all_pascal_voc()

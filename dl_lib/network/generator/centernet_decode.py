@@ -14,7 +14,7 @@ from dl_lib.nn_utils.feature_utils import gather_feature
 class CenterNetDecoder(object):
 
     @staticmethod
-    def decode(fmap, wh, reg=None, cat_spec_wh=False, K=100):
+    def decode(fmap, wh, reg=None, cat_spec_wh=False, K=100, segmentation=None):
         r"""
         decode output feature map to detection results
 
@@ -47,6 +47,16 @@ class CenterNetDecoder(object):
         else:
             wh = wh.reshape(batch, K, 2)
 
+        if segmentation is not None:
+            segmentation_x = gather_feature(segmentation[0], index, use_transform=True)
+            segmentation_y = gather_feature(segmentation[1], index, use_transform=True)
+            batch_size = segmentation_x.shape[0]
+            objects_num = segmentation_x.shape[1]
+            points_num = segmentation_x.shape[2]
+            segmentation = torch.zeros((batch_size, objects_num, points_num*2))
+            segmentation[:, :, 0::2] = segmentation_x
+            segmentation[:, :, 1::2] = segmentation_y
+
         clses  = clses.reshape(batch, K, 1).float()
         scores = scores.reshape(batch, K, 1)
 
@@ -55,7 +65,7 @@ class CenterNetDecoder(object):
                             xs + half_w, ys + half_h],
                            dim=2)
 
-        detections = (bboxes, scores, clses)
+        detections = (bboxes, scores, clses, segmentation)
 
         return detections
 
@@ -83,6 +93,29 @@ class CenterNetDecoder(object):
         return target_boxes
 
     @staticmethod
+    def transform_segmentation(boxes, img_info, scale=1):
+        r"""
+        transform predicted boxes to target boxes
+
+        Args:
+            boxes(Tensor): torch Tensor with (Batch, N, 4) shape
+            img_info(dict): dict contains all information of original image
+            scale(float): used for multiscale testing
+        """
+        boxes = boxes.cpu().numpy().reshape(-1, 8)
+
+        center = img_info['center']
+        size = img_info['size']
+        output_size = (img_info['width'], img_info['height'])
+        src, dst = CenterAffine.generate_src_and_dst(center, size, output_size)
+        trans = cv2.getAffineTransform(np.float32(dst), np.float32(src))
+
+        coords = boxes.reshape(-1, 2)
+        aug_coords = np.column_stack((coords, np.ones(coords.shape[0])))
+        target_segmentation = np.dot(aug_coords, trans.T).reshape(-1, 8)
+        return target_segmentation
+
+    @staticmethod
     def pseudo_nms(fmap, pool_size=3):
         r"""
         apply max pooling to get the same effect of nms
@@ -107,13 +140,13 @@ class CenterNetDecoder(object):
         topk_scores, topk_inds = torch.topk(scores.reshape(batch, channel, -1), K)
 
         topk_inds = topk_inds % (height * width)
-        topk_ys = (topk_inds / width).int().float()
+        topk_ys = (topk_inds.true_divide(width)).int().float()
         topk_xs = (topk_inds % width).int().float()
 
         # get all topk in in a batch
         topk_score, index = torch.topk(topk_scores.reshape(batch, -1), K)
         # div by K because index is grouped by K(C x K shape)
-        topk_clses = (index / K).int()
+        topk_clses = (index.true_divide(K)).int()
         topk_inds = gather_feature(topk_inds.view(batch, -1, 1), index).reshape(batch, K)
         topk_ys = gather_feature(topk_ys.reshape(batch, -1, 1), index).reshape(batch, K)
         topk_xs = gather_feature(topk_xs.reshape(batch, -1, 1), index).reshape(batch, K)

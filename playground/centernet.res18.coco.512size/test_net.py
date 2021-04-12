@@ -15,19 +15,20 @@ Therefore, we recommend you to use dl_lib as an library and take
 this file as an example of how to use the library.
 You may want to write your own script with your datasets and other customizations.
 """
-
+import glob
+import logging
 import os
+import re
 import sys
 sys.path.insert(0, '.')  # noqa: E402
-
-from colorama import Fore, Style
+from collections import OrderedDict
 
 import dl_lib.utils.comm as comm
 from config import config
 from dl_lib.checkpoint import DetectionCheckpointer
 from dl_lib.data import MetadataCatalog
 from dl_lib.engine import (DefaultTrainer, default_argument_parser,
-                           default_setup, hooks, launch)
+                           default_setup, launch)
 from dl_lib.evaluation import (COCOEvaluator, DatasetEvaluators,
                                PascalVOCDetectionEvaluator, verify_results)
 from net import build_model
@@ -58,9 +59,10 @@ class Trainer(DefaultTrainer):
             evaluator_list.append(
                 COCOEvaluator(
                     dataset_name, cfg, True,
-                    output_folder, dump=cfg.GLOBAL.DUMP_TRAIN
+                    output_folder, dump=cfg.GLOBAL.DUMP_TEST
                 ))
-        elif evaluator_type == "pascal_voc":
+
+        if evaluator_type == "pascal_voc":
             return PascalVOCDetectionEvaluator(dataset_name)
 
         if len(evaluator_list) == 0:
@@ -69,25 +71,74 @@ class Trainer(DefaultTrainer):
                     dataset_name, evaluator_type
                 )
             )
-        elif len(evaluator_list) == 1:
+        if len(evaluator_list) == 1:
             return evaluator_list[0]
         return DatasetEvaluators(evaluator_list)
+
+    @classmethod
+    def test_with_TTA(cls, cfg, model):
+        logger = logging.getLogger("dl_lib.trainer")
+        # In the end of training, run an evaluation with TTA
+        # Only support some R-CNN models.
+        logger.info("Running inference with test-time augmentation ...")
+        from dl_lib.modeling import GeneralizedRCNNWithTTA
+        model = GeneralizedRCNNWithTTA(cfg, model)
+        evaluators = [
+            cls.build_evaluator(
+                cfg, name, output_folder=os.path.join(cfg.OUTPUT_DIR, "inference_TTA")
+            )
+            for name in cfg.DATASETS.TEST
+        ]
+        res = cls.test(cfg, model, evaluators)
+        res = OrderedDict({k + "_TTA": v for k, v in res.items()})
+        return res
+
+
+def test_argument_parser():
+    parser = default_argument_parser()
+    parser.add_argument("--start-iter", type=int, default=0, help="start iter used to test")
+    parser.add_argument("--end-iter", type=int, default=None,
+                        help="end iter used to test")
+    parser.add_argument("--debug", action="store_true", help="use debug mode or not")
+    return parser
 
 
 def main(args):
     config.merge_from_list(args.opts)
     cfg, logger = default_setup(config, args)
-    model = build_model(cfg)
-    logger.info(f"Model structure: {model}")
-    if sys.platform == "linux":
-        file_sys = os.statvfs(cfg.OUTPUT_DIR)
-        free_space_Gb = (file_sys.f_bfree * file_sys.f_frsize) / 2**30
-        # We assume that a single dumped model is 700Mb
-        eval_space_Gb = (cfg.SOLVER.LR_SCHEDULER.MAX_ITER // cfg.SOLVER.CHECKPOINT_PERIOD) * 700 / 2**10
-        if eval_space_Gb > free_space_Gb:
-            logger.warning(f"{Fore.RED}Remaining space({free_space_Gb}GB) "
-                           f"is less than ({eval_space_Gb}GB){Style.RESET_ALL}")
-    if args.eval_only:
+    if args.debug:
+        batches = int(cfg.SOLVER.IMS_PER_BATCH / 8 * args.num_gpus)
+        if cfg.SOLVER.IMS_PER_BATCH != batches:
+            cfg.SOLVER.IMS_PER_BATCH = batches
+            logger.warning("SOLVER.IMS_PER_BATCH is changed to {}".format(batches))
+
+    if "MODEL.WEIGHTS" in args.opts:
+        valid_files = [cfg.MODEL.WEIGHTS]
+    else:
+        list_of_files = glob.glob(os.path.join(cfg.OUTPUT_DIR, '*.pth'))
+        assert list_of_files, "no pth file found in {}".format(cfg.OUTPUT_DIR)
+        list_of_files.sort(key=os.path.getctime)
+        latest_file = list_of_files[-1]
+        if not args.end_iter:
+            valid_files = [latest_file]
+        else:
+            files = [f for f in list_of_files if str(f) <= str(latest_file)]
+            valid_files = []
+            for f in files:
+                try:
+                    model_iter = int(re.split(r'(model_|\.pth)', f)[-3])
+                except Exception:
+                    logger.warning("remove {}".format(f))
+                    continue
+                if args.start_iter <= model_iter <= args.end_iter:
+                    valid_files.append(f)
+            assert valid_files, "No .pth files satisfy your requirement"
+
+    # * means all if need specific format then *.csv
+    for current_file in valid_files:
+        cfg.MODEL.WEIGHTS = current_file
+        model = build_model(cfg)
+
         DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
             cfg.MODEL.WEIGHTS, resume=args.resume
         )
@@ -96,26 +147,12 @@ def main(args):
             verify_results(cfg, res)
         if cfg.TEST.AUG.ENABLED:
             res.update(Trainer.test_with_TTA(cfg, model))
-        return res
 
-    """
-    If you'd like to do anything fancier than the standard training logic,
-    consider writing your own training loop or subclassing the trainer.
-    """
-    trainer = Trainer(cfg, model)
-    trainer.resume_or_load(resume=args.resume)
-    if cfg.TEST.AUG.ENABLED:
-        trainer.register_hooks(
-            [hooks.EvalHook(0, lambda: trainer.test_with_TTA(cfg, trainer.model))]
-        )
-
-    return trainer.train()
+    # return res
 
 
 if __name__ == "__main__":
-    args = default_argument_parser().parse_args()
-    print("soft link to {}".format(config.OUTPUT_DIR))
-    config.link_log()
+    args = test_argument_parser().parse_args()
     print("Command Line Args:", args)
     launch(
         main,

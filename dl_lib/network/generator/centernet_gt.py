@@ -15,8 +15,11 @@ class CenterNetGT(object):
         output_size = config.INPUT.OUTPUT_SIZE
         min_overlap = config.MODEL.CENTERNET.MIN_OVERLAP
         tensor_dim = config.MODEL.CENTERNET.TENSOR_DIM
+        num_polygons_points = config.MODEL.CENTERNET.NUM_POLYGON_POINTS
 
         scoremap_list, wh_list, reg_list, reg_mask_list, index_list = [[] for i in range(5)]
+        segmentation_list_x = []
+        segmentation_list_y = []
         for data in batched_input:
             # img_size = (data['height'], data['width'])
 
@@ -28,6 +31,8 @@ class CenterNetGT(object):
             gt_reg = torch.zeros_like(gt_wh)
             reg_mask = torch.zeros(tensor_dim)
             gt_index = torch.zeros(tensor_dim)
+            gt_segmentation_x = torch.ones(tensor_dim, num_polygons_points) * -128
+            gt_segmentation_y = torch.ones(tensor_dim, num_polygons_points) * -128
             # pass
 
             boxes, classes = bbox_dict['gt_boxes'], bbox_dict['gt_classes']
@@ -50,11 +55,28 @@ class CenterNetGT(object):
             )
             gt_wh[:num_boxes] = wh
 
+            masks = bbox_dict['gt_masks']
+            gt_segmentation_x[:num_boxes], gt_segmentation_y[:num_boxes] = \
+                masks.normalized_by_length(box_tensor.numpy(),
+                                           num_polygons_points,
+                                           box_scale)
+            gt_segmentation = torch.zeros(num_boxes, num_polygons_points * 2)
+            gt_segmentation[:, 0::2] = gt_segmentation_x[:num_boxes]
+            gt_segmentation[:, 1::2] = gt_segmentation_y[:num_boxes]
+            import cv2
+            image = data['image'].numpy().transpose((1, 2, 0))
+            image = cv2.resize(image, (128, 128))
+            for bbox in box_tensor:
+                cv2.rectangle(image, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (0, 255, 0), 2)
+                cv2.imwrite(r'D:\project\COCO_MetalMulti\result\result.jpg', image)
+
             scoremap_list.append(gt_scoremap)
             wh_list.append(gt_wh)
             reg_list.append(gt_reg)
             reg_mask_list.append(reg_mask)
             index_list.append(gt_index)
+            segmentation_list_x.append(gt_segmentation_x)
+            segmentation_list_y.append(gt_segmentation_y)
 
         gt_dict = {
             "score_map": torch.stack(scoremap_list, dim=0),
@@ -62,6 +84,8 @@ class CenterNetGT(object):
             "reg": torch.stack(reg_list, dim=0),
             "reg_mask": torch.stack(reg_mask_list, dim=0),
             "index": torch.stack(index_list, dim=0),
+            "segmentation_x": torch.stack(segmentation_list_x, dim=0),
+            "segmentation_y": torch.stack(segmentation_list_y, dim=0),
         }
         return gt_dict
 
